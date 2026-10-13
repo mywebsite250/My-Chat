@@ -1,1 +1,354 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Chat - ٹیلیگرام ویب</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;600;700&display=swap');
+    body {
+      font-family: 'Noto Naskh Arabic', sans-serif;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-screen flex overflow-hidden">
 
+  <!-- Main Container -->
+  <div class="flex w-full h-full">
+
+    <!-- Sidebar: Chat List -->
+    <div id="sidebar" class="w-full md:w-80 lg:w-96 bg-white border-l border-slate-200 flex flex-col h-full z-10 transition-all duration-300">
+      
+      <!-- App Header -->
+      <div class="p-3 bg-sky-600 text-white flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-paper-plane text-2xl"></i>
+          <h1 class="text-xl font-bold">My Chat</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="toggleModal('modalCreate')" class="p-2 hover:bg-sky-700 rounded-full transition" title="نیا گروپ یا چینل">
+            <i class="fa-solid fa-plus text-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="p-3 border-b border-slate-100">
+        <div class="relative">
+          <input type="text" id="searchInput" oninput="filterChats()" placeholder="تلاش کریں..." 
+                 class="w-full pl-3 pr-9 py-2 bg-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+          <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-400 text-sm"></i>
+        </div>
+      </div>
+
+      <!-- Chat Categories Tabs -->
+      <div class="flex border-b border-slate-100 text-sm text-slate-600 font-medium px-2">
+        <button onclick="switchTab('all')" class="tab-btn py-2 px-3 border-b-2 border-sky-600 text-sky-600" id="tab-all">سبھی</button>
+        <button onclick="switchTab('direct')" class="tab-btn py-2 px-3 border-b-2 border-transparent hover:text-sky-600" id="tab-direct">چیٹس</button>
+        <button onclick="switchTab('group')" class="tab-btn py-2 px-3 border-b-2 border-transparent hover:text-sky-600" id="tab-group">گروپس</button>
+        <button onclick="switchTab('channel')" class="tab-btn py-2 px-3 border-b-2 border-transparent hover:text-sky-600" id="tab-channel">چینلز</button>
+      </div>
+
+      <!-- Conversations List -->
+      <div id="chatsList" class="flex-1 overflow-y-auto custom-scroll divide-y divide-slate-50">
+        <!-- Chats will load dynamically -->
+      </div>
+    </div>
+
+    <!-- Main Chat Window Area -->
+    <div id="chatWindow" class="hidden md:flex flex-1 flex-col h-full bg-[#e6ebf0] relative">
+
+      <!-- Chat Room Header -->
+      <div id="roomHeader" class="bg-white p-3 border-b border-slate-200 flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-3">
+          <button onclick="closeChatMobile()" class="md:hidden text-slate-600 hover:text-sky-600 p-1">
+            <i class="fa-solid fa-arrow-right text-lg"></i>
+          </button>
+          <div id="activeAvatar" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-sky-500">
+            C
+          </div>
+          <div>
+            <h2 id="activeChatTitle" class="font-bold text-slate-800 leading-tight">چیٹ کا نام</h2>
+            <p id="activeChatSubtitle" class="text-xs text-slate-500">آن لائن</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 text-slate-500">
+          <button class="p-2 hover:bg-slate-100 rounded-full"><i class="fa-solid fa-phone"></i></button>
+          <button class="p-2 hover:bg-slate-100 rounded-full"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+        </div>
+      </div>
+
+      <!-- Messages Area -->
+      <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll flex flex-col">
+        <!-- Messages will load here -->
+      </div>
+
+      <!-- Input Message Toolbar -->
+      <div class="bg-white p-3 border-t border-slate-200 flex items-center gap-2">
+        <label for="fileInput" class="cursor-pointer p-2 text-slate-500 hover:text-sky-600 transition">
+          <i class="fa-solid fa-paperclip text-lg"></i>
+          <input type="file" id="fileInput" class="hidden" onchange="handleFileUpload(event)">
+        </label>
+        <input type="text" id="messageInput" onkeypress="handleEnter(event)" placeholder="پیغام لکھیں..." 
+               class="flex-1 bg-slate-100 px-4 py-2.5 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+        <button onclick="sendMessage()" class="bg-sky-600 hover:bg-sky-700 text-white w-10 h-10 rounded-full flex items-center justify-center transition shadow-md">
+          <i class="fa-solid fa-paper-plane text-sm"></i>
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Modal: Create Group / Channel -->
+  <div id="modalCreate" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+      <h3 class="text-lg font-bold text-slate-800 mb-4">نیا گروپ یا چینل بنائیں</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">قسم منتخب کریں</label>
+          <select id="newType" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+            <option value="group">گروپ (Group)</option>
+            <option value="channel">چینل (Channel)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">نام</label>
+          <input type="text" id="newName" placeholder="نام درج کریں" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button onclick="toggleModal('modalCreate')" class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 text-sm">منسوخ کریں</button>
+          <button onclick="createConversation()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold">بنائیں</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    // Sample Initial Data
+    let conversations = JSON.parse(localStorage.getItem('my_chat_convos')) || [
+      { id: 1, title: 'جنرل گروپ', type: 'group', icon: 'G', color: 'bg-emerald-500', messages: [{ sender: 'other', text: 'خوش آمدید! یہ آپ کا جنرل گروپ ہے۔', time: '10:00 AM' }] },
+      { id: 2, title: 'خبریں اور اعلانات', type: 'channel', icon: '📢', color: 'bg-blue-600', messages: [{ sender: 'other', text: 'چینل پر تمام اہم نوٹیفیکیشن یہاں آئیں گے۔', time: '10:15 AM' }] },
+      { id: 3, title: 'احمد خان', type: 'direct', icon: 'A', color: 'bg-indigo-500', messages: [{ sender: 'other', text: 'سلام، کیسے ہیں آپ؟', time: '10:30 AM' }] }
+    ];
+
+    let activeChatId = 1;
+    let currentTab = 'all';
+
+    function init() {
+      renderConversations();
+      openChat(activeChatId);
+    }
+
+    function renderConversations() {
+      const list = document.getElementById('chatsList');
+      list.innerHTML = '';
+
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = conversations.filter(c => {
+        const matchesTab = currentTab === 'all' || c.type === currentTab;
+        const matchesQuery = c.title.toLowerCase().includes(query);
+        return matchesTab && matchesQuery;
+      });
+
+      filtered.forEach(c => {
+        const lastMsg = c.messages.length > 0 ? c.messages[c.messages.length - 1].text : 'کوئی پیغام نہیں';
+        const isActive = c.id === activeChatId;
+
+        const item = document.createElement('div');
+        item.className = `flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 transition ${isActive ? 'bg-sky-50' : ''}`;
+        item.onclick = () => openChat(c.id);
+
+        item.innerHTML = `
+          <div class="w-12 h-12 rounded-full ${c.color} flex items-center justify-center font-bold text-white text-lg shrink-0">
+            ${c.icon}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-baseline mb-1">
+              <h3 class="font-semibold text-slate-800 text-sm truncate">${c.title}</h3>
+              <span class="text-xs text-slate-400">${c.type === 'channel' ? 'چینل' : c.type === 'group' ? 'گروپ' : ''}</span>
+            </div>
+            <p class="text-xs text-slate-500 truncate">${lastMsg}</p>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function openChat(id) {
+      activeChatId = id;
+      const chat = conversations.find(c => c.id === id);
+      if (!chat) return;
+
+      document.getElementById('activeChatTitle').innerText = chat.title;
+      document.getElementById('activeChatSubtitle').innerText = chat.type === 'channel' ? 'براڈکاسٹ چینل' : 'آن لائن';
+      
+      const avatar = document.getElementById('activeAvatar');
+      avatar.innerText = chat.icon;
+      avatar.className = `w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${chat.color}`;
+
+      renderMessages();
+
+      // Mobile responsive toggle
+      const sidebar = document.getElementById('sidebar');
+      const chatWindow = document.getElementById('chatWindow');
+      if (window.innerWidth < 768) {
+        sidebar.classList.add('hidden');
+        chatWindow.classList.remove('hidden');
+        chatWindow.classList.add('flex');
+      }
+
+      renderConversations();
+    }
+
+    function closeChatMobile() {
+      const sidebar = document.getElementById('sidebar');
+      const chatWindow = document.getElementById('chatWindow');
+      sidebar.classList.remove('hidden');
+      chatWindow.classList.add('hidden');
+      chatWindow.classList.remove('flex');
+    }
+
+    function renderMessages() {
+      const container = document.getElementById('messagesContainer');
+      container.innerHTML = '';
+
+      const chat = conversations.find(c => c.id === activeChatId);
+      if (!chat) return;
+
+      chat.messages.forEach(msg => {
+        const isMe = msg.sender === 'me';
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `flex ${isMe ? 'justify-start' : 'justify-end'}`;
+
+        let content = `<p class="text-sm">${msg.text}</p>`;
+        if (msg.file) {
+          content = `
+            <div class="flex items-center gap-2 mb-1 p-2 bg-black/5 rounded">
+              <i class="fa-solid fa-file text-xl text-sky-600"></i>
+              <span class="text-xs truncate font-medium">${msg.file}</span>
+            </div>
+            ${msg.text ? `<p class="text-sm">${msg.text}</p>` : ''}
+          `;
+        }
+
+        msgDiv.innerHTML = `
+          <div class="max-w-[75%] rounded-2xl px-4 py-2 shadow-sm ${isMe ? 'bg-sky-600 text-white rounded-br-none' : 'bg-white text-slate-800 rounded-bl-none'}">
+            ${content}
+            <span class="text-[10px] block mt-1 ${isMe ? 'text-sky-200 text-left' : 'text-slate-400 text-right'}">${msg.time}</span>
+          </div>
+        `;
+        container.appendChild(msgDiv);
+      });
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chat = conversations.find(c => c.id === activeChatId);
+      if (!chat) return;
+
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      chat.messages.push({ sender: 'me', text, time });
+      input.value = '';
+
+      saveData();
+      renderMessages();
+      renderConversations();
+
+      // Simple Auto Reply Demo
+      setTimeout(() => {
+        chat.messages.push({ sender: 'other', text: 'پیغام موصول ہوا!', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+        saveData();
+        renderMessages();
+        renderConversations();
+      }, 1000);
+    }
+
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const chat = conversations.find(c => c.id === activeChatId);
+      if (!chat) return;
+
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      chat.messages.push({ sender: 'me', text: '', file: file.name, time });
+
+      saveData();
+      renderMessages();
+      renderConversations();
+      e.target.value = '';
+    }
+
+    function handleEnter(e) {
+      if (e.key === 'Enter') sendMessage();
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-sky-600', 'text-sky-600');
+        btn.classList.add('border-transparent');
+      });
+      document.getElementById(`tab-${tab}`).classList.add('border-sky-600', 'text-sky-600');
+      renderConversations();
+    }
+
+    function filterChats() {
+      renderConversations();
+    }
+
+    function toggleModal(id) {
+      const el = document.getElementById(id);
+      el.classList.toggle('hidden');
+    }
+
+    function createConversation() {
+      const name = document.getElementById('newName').value.trim();
+      const type = document.getElementById('newType').value;
+      if (!name) return;
+
+      const colors = ['bg-rose-500', 'bg-amber-500', 'bg-purple-500', 'bg-teal-500'];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+      const newConvo = {
+        id: Date.now(),
+        title: name,
+        type: type,
+        icon: type === 'channel' ? '📢' : name.charAt(0).toUpperCase(),
+        color: randomColor,
+        messages: [{ sender: 'other', text: `${name} بنایا گیا ہے۔`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]
+      };
+
+      conversations.unshift(newConvo);
+      saveData();
+      toggleModal('modalCreate');
+      document.getElementById('newName').value = '';
+      openChat(newConvo.id);
+    }
+
+    function saveData() {
+      localStorage.setItem('my_chat_convos', JSON.stringify(conversations));
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
